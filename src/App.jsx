@@ -23,6 +23,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import heroCourtImage from "../images/gravel.jpeg";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://localhost:50372";
@@ -250,18 +251,8 @@ function Header() {
 function HeroVisual() {
   return (
     <div className="hero-card" aria-label="Legal transcription visual">
-      <div className="hero-card-inner">
-        <div className="scale-circle" />
-        <Scale className="hero-scale" strokeWidth={1.1} />
-        <div className="document document-back" />
-        <div className="document document-front" />
-        <div className="pen-shadow" />
-        <div className="pen" />
-        <div className="pen-line" />
-        <div className="pen-band" />
-        <p className="hero-visual-text">
-          Legal work deserves <span>legal precision.</span>
-        </p>
+      <div className="hero-image-wrap">
+        <img src={heroCourtImage} alt="Court gavel, legal files and scales" className="hero-image" />
       </div>
     </div>
   );

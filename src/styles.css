@@ -13,7 +13,7 @@
   --paper: #e8f3f4;
   --white: #ffffff;
   --shadow: 0 24px 70px rgba(16, 55, 65, 0.2);
-  --serif: Georgia, "Times New Roman", serif;
+  --serif: "Playfair Display", Georgia, serif;
   --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -231,6 +231,21 @@ img { max-width: 100%; display: block; }
   border: 1px solid rgba(176, 141, 87, 0.25);
   border-radius: 3px;
   box-shadow: var(--shadow);
+}
+.hero-image-wrap {
+  position: relative;
+  height: 480px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #0f2f37;
+  display: grid;
+  place-items: center;
+}
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 .hero-card-inner {
   position: relative;
@@ -707,6 +722,7 @@ img { max-width: 100%; display: block; }
   .hero-actions { flex-direction: column; }
   .primary-button, .secondary-button { width: 100%; }
   .hero-card-inner { height: 390px; }
+  .hero-image-wrap { height: 390px; }
   .hero-visual-text { left: 24px; bottom: 92px; width: 250px; font-size: 2rem; }
   .hero-scale { right: 32px; width: 150px; height: 150px; }
   .scale-circle { right: 25px; width: 150px; height: 150px; }
