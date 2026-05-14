@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -28,6 +28,48 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "https://localhost:50372";
 
 const TOKEN_STORAGE_KEY = "khanyisa_access_token";
+const ADMIN_ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+
+const TRANSCRIPTION_STATUS_LABELS = {
+  1: "New",
+  2: "Awaiting Payment",
+  3: "Paid",
+  4: "Processing",
+  5: "Completed",
+  6: "Failed",
+};
+
+function decodeJwtPayload(token) {
+  if (!token) {
+    return null;
+  }
+
+  const segments = token.split(".");
+  if (segments.length < 2) {
+    return null;
+  }
+
+  try {
+    const base64 = segments[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padding = base64.length % 4 ? "=".repeat(4 - (base64.length % 4)) : "";
+    const json = atob(base64 + padding);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function getStatusLabel(status) {
+  return TRANSCRIPTION_STATUS_LABELS[status] || `Unknown (${status ?? "n/a"})`;
+}
+
+function getPayFastRedirectUrl(payload) {
+  if (typeof payload === "string") {
+    return payload;
+  }
+
+  return payload?.redirectUrl || payload?.url || payload?.paymentUrl || "";
+}
 
 async function parseApiError(response) {
   const responseText = await response.text();
@@ -365,22 +407,52 @@ function Pricing() {
 
 function ClientPortal() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedJobId, setSelectedJobId] = useState("");
   const [authMode, setAuthMode] = useState("login");
-  const [authForm, setAuthForm] = useState({ fullName: "", email: "", password: "" });
+  const [authForm, setAuthForm] = useState({ fullName: "", email: "", password: "", adminCode: "" });
   const [authStatus, setAuthStatus] = useState("idle");
   const [authMessage, setAuthMessage] = useState("");
   const [uploadStatus, setUploadStatus] = useState("idle");
-  const [message, setMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("idle");
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [adminActionStatus, setAdminActionStatus] = useState("idle");
+  const [adminActionMessage, setAdminActionMessage] = useState("");
   const [transcriptsStatus, setTranscriptsStatus] = useState("idle");
   const [transcriptsMessage, setTranscriptsMessage] = useState("");
   const [transcripts, setTranscripts] = useState([]);
+  const [adminFilterStatus, setAdminFilterStatus] = useState("all");
+  const [adminFilterUserId, setAdminFilterUserId] = useState("");
+  const [latestJobId, setLatestJobId] = useState("");
 
   const [authToken, setAuthToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY) || "");
   const [currentUser, setCurrentUser] = useState(null);
 
   const fileName = useMemo(() => selectedFile?.name || "No file selected", [selectedFile]);
+  const decodedToken = useMemo(() => decodeJwtPayload(authToken), [authToken]);
+  const isAdmin = useMemo(() => {
+    const roleValue = decodedToken?.[ADMIN_ROLE_CLAIM] || decodedToken?.role;
+
+    if (Array.isArray(roleValue)) {
+      return roleValue.includes("Admin");
+    }
+
+    return roleValue === "Admin";
+  }, [decodedToken]);
 
   const isAuthenticated = !!authToken;
+
+  useEffect(() => {
+    if (!decodedToken) {
+      return;
+    }
+
+    setCurrentUser((existing) => ({
+      userId: existing?.userId || decodedToken?.sub || "",
+      fullName: existing?.fullName || decodedToken?.name || "",
+      email: existing?.email || decodedToken?.email || "",
+    }));
+  }, [decodedToken]);
 
   const updateAuthField = (field, value) => {
     setAuthForm((current) => ({ ...current, [field]: value }));
@@ -403,7 +475,11 @@ function ClientPortal() {
     setCurrentUser(null);
     setTranscripts([]);
     setTranscriptsMessage("");
-    setMessage("Signed out.");
+    setUploadMessage("Signed out.");
+    setPaymentMessage("");
+    setAdminActionMessage("");
+    setSelectedJobId("");
+    setLatestJobId("");
   };
 
   const submitAuth = async (event) => {
@@ -416,7 +492,12 @@ function ClientPortal() {
       const payload = {
         email: authForm.email,
         password: authForm.password,
-        ...(authMode === "register" ? { fullName: authForm.fullName } : {}),
+        ...(authMode === "register"
+          ? {
+              fullName: authForm.fullName,
+              ...(authForm.adminCode.trim() ? { adminCode: authForm.adminCode.trim() } : {}),
+            }
+          : {}),
       };
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -437,25 +518,26 @@ function ClientPortal() {
       saveSession(authPayload);
       setAuthStatus("success");
       setAuthMessage(authMode === "register" ? "Account created and signed in." : "Logged in successfully.");
+      setAuthForm({ fullName: "", email: authForm.email, password: "", adminCode: "" });
     } catch (error) {
       setAuthStatus("error");
       setAuthMessage(error instanceof Error ? error.message : "Authentication failed.");
     }
   };
 
-  const HandleUpload = async () => {
+  const handleUpload = async () => {
     if (!selectedFile) {
-      setMessage("Please select an audio or video file first.");
+      setUploadMessage("Please select an audio or video file first.");
       return;
     }
 
     if (!authToken) {
-      setMessage("Please login first before uploading.");
+      setUploadMessage("Please login first before uploading.");
       return;
     }
 
     setUploadStatus("uploading");
-    setMessage("Uploading file to transcription API...");
+    setUploadMessage("Uploading file to transcription API...");
 
     try {
       const formData = new FormData();
@@ -477,11 +559,16 @@ function ClientPortal() {
 
       const result = await response.json();
       setUploadStatus("success");
-      setMessage(`Transcription submitted: ${result.originalFileName || selectedFile.name}. Status: ${result.status}`);
+      setUploadMessage(
+        `Transcription submitted: ${result.originalFileName || selectedFile.name}. Status: ${getStatusLabel(result.status)}`
+      );
+      setLatestJobId(result?.id || "");
+      setSelectedJobId(result?.id || "");
       setSelectedFile(null);
+      await fetchTranscripts();
     } catch (error) {
       setUploadStatus("error");
-      setMessage(error instanceof Error ? error.message : "Upload failed. Please try again.");
+      setUploadMessage(error instanceof Error ? error.message : "Upload failed. Please try again.");
     }
   };
 
@@ -518,6 +605,169 @@ function ClientPortal() {
     }
   };
 
+  const startPayment = async (jobId) => {
+    if (!authToken) {
+      setPaymentMessage("Please login first.");
+      return;
+    }
+
+    if (!jobId) {
+      setPaymentMessage("Select or provide a job ID first.");
+      return;
+    }
+
+    setPaymentStatus("loading");
+    setPaymentMessage("Starting PayFast checkout...");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/payfast/start/${jobId}`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseApiError(response);
+        throw new Error(errorMessage);
+      }
+
+      const rawPayload = await response.text();
+      let payload = rawPayload;
+
+      try {
+        payload = rawPayload ? JSON.parse(rawPayload) : "";
+      } catch {
+        payload = rawPayload;
+      }
+
+      const redirectUrl = getPayFastRedirectUrl(payload);
+
+      if (!redirectUrl) {
+        setPaymentStatus("success");
+        setPaymentMessage("Payment session started, but no redirect URL was returned.");
+        return;
+      }
+
+      setPaymentStatus("success");
+      setPaymentMessage("Redirecting to PayFast sandbox...");
+      window.location.assign(redirectUrl);
+    } catch (error) {
+      setPaymentStatus("error");
+      setPaymentMessage(error instanceof Error ? error.message : "Could not start payment.");
+    }
+  };
+
+  const fetchAdminTranscriptions = async () => {
+    if (!isAdmin) {
+      setAdminActionStatus("error");
+      setAdminActionMessage("Admin role is required for admin transcription endpoints.");
+      return;
+    }
+
+    setAdminActionStatus("loading");
+    setAdminActionMessage("Loading admin transcription jobs...");
+
+    try {
+      const userId = adminFilterUserId.trim();
+      const endpoint = userId
+        ? `/api/admin/transcriptions/by-user/${userId}`
+        : adminFilterStatus === "all"
+          ? "/api/admin/transcriptions"
+          : `/api/admin/transcriptions/by-status/${adminFilterStatus}`;
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseApiError(response);
+        throw new Error(errorMessage);
+      }
+
+      const adminJobs = await response.json();
+      setTranscripts(Array.isArray(adminJobs) ? adminJobs : []);
+      setAdminActionStatus("success");
+      setAdminActionMessage(`Retrieved ${Array.isArray(adminJobs) ? adminJobs.length : 0} admin job(s).`);
+      setTranscriptsStatus("success");
+      setTranscriptsMessage("");
+    } catch (error) {
+      setAdminActionStatus("error");
+      setAdminActionMessage(error instanceof Error ? error.message : "Could not load admin jobs.");
+    }
+  };
+
+  const markPaid = async (jobId) => {
+    if (!isAdmin) {
+      setAdminActionStatus("error");
+      setAdminActionMessage("Admin role is required for mark-paid.");
+      return;
+    }
+
+    setAdminActionStatus("loading");
+    setAdminActionMessage(`Marking job ${jobId} as paid...`);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/transcriptions/${jobId}/mark-paid`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseApiError(response);
+        throw new Error(errorMessage);
+      }
+
+      setAdminActionStatus("success");
+      setAdminActionMessage(`Job ${jobId} marked as paid.`);
+      await fetchAdminTranscriptions();
+    } catch (error) {
+      setAdminActionStatus("error");
+      setAdminActionMessage(error instanceof Error ? error.message : "Could not mark job as paid.");
+    }
+  };
+
+  const runAdminTranscription = async (jobId) => {
+    if (!isAdmin) {
+      setAdminActionStatus("error");
+      setAdminActionMessage("Admin role is required for transcribe.");
+      return;
+    }
+
+    setAdminActionStatus("loading");
+    setAdminActionMessage(`Submitting job ${jobId} for transcription...`);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/transcriptions/${jobId}/transcribe`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorMessage = await parseApiError(response);
+        throw new Error(errorMessage);
+      }
+
+      setAdminActionStatus("success");
+      setAdminActionMessage(`Job ${jobId} transcription completed or queued.`);
+      await fetchAdminTranscriptions();
+    } catch (error) {
+      setAdminActionStatus("error");
+      setAdminActionMessage(error instanceof Error ? error.message : "Could not transcribe job.");
+    }
+  };
+
   return (
     <section id="client-portal" className="portal-section">
       <div className="container portal-grid">
@@ -535,6 +785,12 @@ function ClientPortal() {
 
         <div className="upload-card">
           <div className="portal-api-target">API: {API_BASE_URL}</div>
+          <div className="flow-chip-row" aria-label="Transcription flow">
+            <span>1. Auth</span>
+            <span>2. Upload</span>
+            <span>3. PayFast</span>
+            <span>4. Admin Transcribe</span>
+          </div>
 
           <div className="auth-mode-toggle" role="group" aria-label="Authentication mode">
             <button
@@ -560,6 +816,13 @@ function ClientPortal() {
                 onChange={(event) => updateAuthField("fullName", event.target.value)}
                 placeholder="Full Name"
                 required
+              />
+            )}
+            {authMode === "register" && (
+              <input
+                value={authForm.adminCode}
+                onChange={(event) => updateAuthField("adminCode", event.target.value)}
+                placeholder="Admin Code (optional)"
               />
             )}
             <input
@@ -594,7 +857,7 @@ function ClientPortal() {
             <Upload size={42} />
           </div>
           <h3>Upload your audio file</h3>
-          <p>Upload your recording and receive a reviewed legal transcript.</p>
+          <p>Upload your recording, pay via PayFast, then admins can process transcription.</p>
 
           <label className="file-input-label">
             Select File
@@ -607,27 +870,113 @@ function ClientPortal() {
 
           <div className="selected-file">{fileName}</div>
 
-          <button className="dark-button" onClick={HandleUpload} disabled={uploadStatus === "uploading"}>
+          <button className="dark-button" onClick={handleUpload} disabled={uploadStatus === "uploading"}>
             {uploadStatus === "uploading" ? "Uploading..." : "Upload Audio"}
           </button>
 
-          {message && <p className={`upload-message ${uploadStatus}`}>{message}</p>}
+          {uploadMessage && <p className={`upload-message ${uploadStatus}`}>{uploadMessage}</p>}
+
+          <div className="job-actions-card">
+            <p className="job-actions-title">Payment Stage</p>
+            <input
+              value={selectedJobId}
+              onChange={(event) => setSelectedJobId(event.target.value.trim())}
+              placeholder="Job ID for payment"
+              className="job-id-input"
+            />
+            <button
+              className="secondary-fetch-button"
+              type="button"
+              onClick={() => startPayment(selectedJobId || latestJobId)}
+              disabled={paymentStatus === "loading"}
+            >
+              {paymentStatus === "loading" ? "Starting Payment..." : "Start PayFast Payment"}
+            </button>
+            {paymentMessage && <p className={`upload-message ${paymentStatus}`}>{paymentMessage}</p>}
+          </div>
 
           <button className="secondary-fetch-button" type="button" onClick={fetchTranscripts}>
-            Retrieve Transcripts
+            Retrieve My Transcripts
           </button>
 
           {transcriptsMessage && <p className={`upload-message ${transcriptsStatus}`}>{transcriptsMessage}</p>}
+
+          {isAdmin && (
+            <div className="admin-console">
+              <p className="job-actions-title">Admin Console</p>
+              <div className="admin-filter-row">
+                <select
+                  value={adminFilterStatus}
+                  onChange={(event) => setAdminFilterStatus(event.target.value)}
+                  className="job-id-input"
+                >
+                  <option value="all">All statuses</option>
+                  {Object.entries(TRANSCRIPTION_STATUS_LABELS).map(([code, label]) => (
+                    <option key={code} value={code}>
+                      {code} - {label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={adminFilterUserId}
+                  onChange={(event) => setAdminFilterUserId(event.target.value)}
+                  placeholder="Filter by userId (optional)"
+                  className="job-id-input"
+                />
+              </div>
+              <button className="secondary-fetch-button" type="button" onClick={fetchAdminTranscriptions}>
+                Load Admin Transcriptions
+              </button>
+              {adminActionMessage && <p className={`upload-message ${adminActionStatus}`}>{adminActionMessage}</p>}
+            </div>
+          )}
 
           {transcripts.length > 0 && (
             <div className="transcript-list" aria-label="Retrieved transcripts">
               {transcripts.map((item) => (
                 <article key={item.id} className="transcript-item">
                   <p><strong>File:</strong> {item.originalFileName}</p>
-                  <p><strong>Status:</strong> {item.status}</p>
+                  <p><strong>Job ID:</strong> {item.id}</p>
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    <span className={`status-badge status-${item.status}`}>{getStatusLabel(item.status)}</span>
+                  </p>
+                  {typeof item.quoteAmount === "number" && (
+                    <p><strong>Quote:</strong> {item.quoteCurrency || "ZAR"} {item.quoteAmount}</p>
+                  )}
                   <p><strong>Created:</strong> {item.createdAtUtc}</p>
+                  {item.completedAtUtc && <p><strong>Completed:</strong> {item.completedAtUtc}</p>}
                   {item.transcriptText && <p><strong>Transcript:</strong> {item.transcriptText}</p>}
                   {item.errorMessage && <p><strong>Error:</strong> {item.errorMessage}</p>}
+                  <div className="job-inline-actions">
+                    {item.status === 2 && (
+                      <button
+                        type="button"
+                        className="mini-action"
+                        onClick={() => startPayment(item.id)}
+                      >
+                        PayFast Checkout
+                      </button>
+                    )}
+                    {isAdmin && item.status === 2 && (
+                      <button
+                        type="button"
+                        className="mini-action"
+                        onClick={() => markPaid(item.id)}
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                    {isAdmin && item.status === 3 && (
+                      <button
+                        type="button"
+                        className="mini-action"
+                        onClick={() => runAdminTranscription(item.id)}
+                      >
+                        Transcribe
+                      </button>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>
