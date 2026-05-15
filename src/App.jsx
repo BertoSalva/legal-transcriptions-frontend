@@ -297,6 +297,7 @@ function Hero() {
         </motion.div>
 
         <motion.div
+          className="hero-visual-column"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.9, delay: 0.1 }}
