@@ -776,14 +776,6 @@ function ClientPortal() {
         </div>
 
         <div className="upload-card">
-          <div className="portal-api-target">API: {API_BASE_URL}</div>
-          <div className="flow-chip-row" aria-label="Transcription flow">
-            <span>1. Auth</span>
-            <span>2. Upload</span>
-            <span>3. PayFast</span>
-            <span>4. Admin Transcribe</span>
-          </div>
-
           <div className="auth-mode-toggle" role="group" aria-label="Authentication mode">
             <button
               type="button"

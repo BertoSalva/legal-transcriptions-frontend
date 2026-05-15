@@ -178,6 +178,8 @@ img { max-width: 100%; display: block; }
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  text-align: center;
   height: 100%;
 }
 .hero-content h1 {
@@ -191,7 +193,7 @@ img { max-width: 100%; display: block; }
 }
 .hero-subtitle {
   max-width: 590px;
-  margin: 20px 0 0;
+  margin: 20px auto 0;
   color: var(--stone);
   font-family: var(--serif);
   font-size: clamp(1.75rem, 2.6vw, 2.7rem);
@@ -200,18 +202,18 @@ img { max-width: 100%; display: block; }
 .hero-line {
   width: 70px;
   height: 2px;
-  margin: 25px 0 0;
+  margin: 25px auto 0;
   background: var(--bronze);
 }
 .hero-copy {
   max-width: 570px;
-  margin: 20px 0 0;
+  margin: 20px auto 0;
   color: rgba(246, 251, 251, 0.85);
   font-size: 1rem;
   line-height: 1.65;
   font-weight: 600;
 }
-.hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; }
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 28px; }
 .secondary-button {
   display: inline-flex;
   align-items: center;
