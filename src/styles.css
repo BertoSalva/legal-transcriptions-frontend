@@ -14,6 +14,14 @@
   );
   z-index: 2;
 }
+.hero-image-wrap::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+}
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
 
 :root {
@@ -736,6 +744,22 @@ img { max-width: 100%; display: block; }
   .hero-container { grid-template-columns: 1fr; min-height: auto; gap: 36px; }
   .hero-card { margin: 0; max-width: none; }
   .hero-image-wrap { min-height: 420px; height: auto; }
+  .hero-image-wrap::before {
+    opacity: 1;
+    background:
+      linear-gradient(
+        to bottom,
+        var(--charcoal) 0%,
+        rgba(16, 55, 65, 0.78) 14%,
+        rgba(16, 55, 65, 0) 32%
+      ),
+      linear-gradient(
+        to top,
+        var(--charcoal) 0%,
+        rgba(16, 55, 65, 0.74) 12%,
+        rgba(16, 55, 65, 0) 30%
+      );
+  }
   .services-grid, .benefits-grid { grid-template-columns: repeat(2, 1fr); }
   .pricing-grid, .portal-grid, .quote-grid { grid-template-columns: 1fr; }
   .pricing-card.highlighted { transform: none; }
