@@ -1,3 +1,19 @@
+/* Smooth horizontal blend for hero image */
+.hero-image-wrap {
+  position: relative;
+}
+.hero-image-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to left,
+    rgba(16, 55, 65, 0) 70%,
+    var(--charcoal) 100%
+  );
+  z-index: 2;
+}
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
 
 :root {

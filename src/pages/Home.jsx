@@ -24,7 +24,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
-import heroCourtImage from "../../images/gravel.jpeg";
+import heroCourtImage from "../../images/gravel.png";
 
 const services = [
   {
