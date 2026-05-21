@@ -1,16 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   BadgeCheck,
+  Languages,
   BriefcaseBusiness,
   CheckCircle2,
+  ChevronRight,
   ChevronDown,
   ClipboardCheck,
   Clock3,
+  Facebook,
   FileText,
+  Globe2,
+  Instagram,
   Landmark,
+  Linkedin,
   LockKeyhole,
   Mail,
   MapPin,
@@ -46,6 +52,16 @@ const services = [
     icon: Mic,
     title: "Legal Dictation",
     text: "Audio notes and dictations transcribed into well-structured legal documents.",
+  },
+  {
+    icon: Languages,
+    title: "Certified Translation",
+    text: "Qualified translation professionals for any South African official language.",
+  },
+  {
+    icon: Globe2,
+    title: "Media & Television Services",
+    text: "Translation and recording support for media interviews, documentaries and TV productions.",
   },
 ];
 
@@ -113,7 +129,7 @@ function Logo({ dark = true }) {
       </div>
       <div className="logo-text">
         <p className={dark ? "logo-name light" : "logo-name dark"}>Khanyisa</p>
-        <p className="logo-tagline">Legal Transcriptions</p>
+        <p className="logo-tagline">Transcribers</p>
       </div>
     </div>
   );
@@ -148,7 +164,7 @@ function Header() {
           type="button"
           className="brand-link"
           onClick={() => navigate("/")}
-          aria-label="Khanyisa Legal Transcriptions Home"
+          aria-label="Khanyisa Legal Transcribers Home"
         >
           <Logo />
         </button>
@@ -247,7 +263,7 @@ function Hero() {
           transition={{ duration: 0.7 }}
           className="hero-content"
         >
-          <p className="eyebrow">South African Legal Transcription Services</p>
+          <p className="eyebrow hero-eyebrow">South African Legal Recording, Translation & Transcription</p>
           <h1>
             Precision.
             <br />
@@ -255,11 +271,11 @@ function Hero() {
             <br />
             Reliability.
           </h1>
-          <p className="hero-subtitle">Court-ready transcripts you can trust.</p>
+          <p className="hero-subtitle">Court-ready legal records you can trust.</p>
           <div className="hero-line" />
           <p className="hero-copy">
-            Professional transcription and court recording services for legal professionals, law firms,
-            corporates and institutions across South Africa.
+            Precision legal recording, certified translation and transcription services for legal
+            professionals, corporations and institutions across South Africa.
           </p>
 
           <div className="hero-actions">
@@ -305,18 +321,72 @@ function Hero() {
 }
 
 function Services() {
+  const sliderRef = useRef(null);
+  const loopTimeoutRef = useRef(null);
+
+  const getSlideDistance = () => {
+    const slider = sliderRef.current;
+    if (!slider) return 320;
+
+    const firstCard = slider.querySelector(".service-card");
+    const gap = 24;
+    return firstCard ? firstCard.clientWidth + gap : 320;
+  };
+
+  const normalizeLoopPosition = () => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const slideDistance = getSlideDistance();
+    const oneSetWidth = slideDistance * services.length;
+
+    if (slider.scrollLeft >= oneSetWidth) {
+      slider.scrollLeft -= oneSetWidth;
+    }
+  };
+
+  const slideServicesForward = () => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    const slideDistance = getSlideDistance();
+    slider.scrollBy({ left: slideDistance, behavior: "smooth" });
+
+    if (loopTimeoutRef.current) {
+      clearTimeout(loopTimeoutRef.current);
+    }
+
+    loopTimeoutRef.current = setTimeout(() => {
+      normalizeLoopPosition();
+    }, 450);
+  };
+
+  useEffect(() => {
+    const intervalId = setInterval(slideServicesForward, 3000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => () => {
+    if (loopTimeoutRef.current) {
+      clearTimeout(loopTimeoutRef.current);
+    }
+  }, []);
+
   return (
     <section id="services" className="services-section">
       <div className="container">
         <SectionTitle title="Our Services" />
-        <div className="services-grid">
-          {services.map(({ icon: Icon, title, text }, index) => (
+        <div
+          className="services-slider-shell"
+        >
+          <div className="services-grid" ref={sliderRef} onScroll={normalizeLoopPosition}>
+          {[...services, ...services].map(({ icon: Icon, title, text }, index) => (
             <motion.article
-              key={title}
+              key={`${title}-${index}`}
               initial={{ opacity: 0, y: 22 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: index * 0.08 }}
+              transition={{ duration: 0.45, delay: (index % services.length) * 0.08 }}
               className="service-card"
             >
               <Icon className="service-icon" strokeWidth={1.35} />
@@ -327,6 +397,16 @@ function Services() {
               </a>
             </motion.article>
           ))}
+          </div>
+
+          <button
+            type="button"
+            className="services-scroll-btn services-scroll-btn-right"
+            onClick={slideServicesForward}
+            aria-label="Slide services"
+          >
+            <ChevronRight size={20} />
+          </button>
         </div>
       </div>
     </section>
@@ -338,6 +418,10 @@ function WhyChooseUs() {
     <section id="about-us" className="why-section">
       <div className="container">
         <SectionTitle title="Why Choose Khanyisa?" dark />
+        <p className="why-intro">
+          Precision legal recording, certified translation and transcription services built for legal,
+          corporate and institutional teams across South Africa.
+        </p>
         <div className="benefits-grid">
           {benefits.map(({ icon: Icon, title, text }) => (
             <article key={title} className="benefit-card">
@@ -347,6 +431,70 @@ function WhyChooseUs() {
             </article>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function TranslationOptions() {
+  return (
+    <section className="translation-section">
+      <div className="container">
+        <SectionTitle
+          title="Translation Options"
+          eyebrow="Choose your translation support"
+        />
+
+        <div className="translation-grid">
+          <article className="translation-card">
+            <h3>Language Requirement</h3>
+            <p>
+              Let us know whether your matter needs translation into another language, or whether no
+              translation is required.
+            </p>
+          </article>
+
+          <article className="translation-card">
+            <h3>Request A Practitioner</h3>
+            <p>
+              Request a qualified legal translation practitioner for specialist legal documents and proceedings.
+            </p>
+          </article>
+
+          <article className="translation-card">
+            <h3>Outsourced Legal Translators</h3>
+            <p>
+              We can outsource to experienced legal translators to match your language and turnaround needs.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FounderSection() {
+  return (
+    <section className="founder-section">
+      <div className="container founder-grid">
+        <div>
+          <SectionTitle title="About The Founder" eyebrow="Leadership" />
+          <p>
+            Khanyisa was founded to deliver precision legal recording, certified translation and transcription
+            services with professionalism, confidentiality and dependable turnaround.
+          </p>
+          <p>
+            The founder's vision is to make legal language services accessible to professionals, firms,
+            corporations and institutions that need trusted, high-quality outcomes.
+          </p>
+        </div>
+
+        <article className="founder-highlight">
+          <h3>Founder Focus</h3>
+          <p><CheckCircle2 size={18} /> Legal quality standards</p>
+          <p><CheckCircle2 size={18} /> Confidential client handling</p>
+          <p><CheckCircle2 size={18} /> Strong national language support</p>
+        </article>
       </div>
     </section>
   );
@@ -387,10 +535,15 @@ function QuoteForm() {
     email: "",
     phone: "",
     matterType: "Court Proceedings",
+    translationRequirement: "No translation required",
+    translationSupport: "Request practitioner",
     turnaround: "Standard",
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+
+  const isTranslationMatter =
+    form.matterType === "Certified Translation" || form.matterType === "Media / Television Services";
 
   const UpdateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -413,7 +566,7 @@ function QuoteForm() {
 
           <div className="contact-list">
             <p><Phone /> +27 00 000 0000</p>
-            <p><Mail /> info@khanyisatranscriptions.co.za</p>
+            <p><Mail /> info@khanyisatranscribers.co.za</p>
             <p><MapPin /> South Africa</p>
           </div>
         </div>
@@ -444,9 +597,38 @@ function QuoteForm() {
                 <option>Arbitration / CCMA</option>
                 <option>Disciplinary Hearing</option>
                 <option>Legal Dictation</option>
+                <option>Certified Translation</option>
+                <option>Media / Television Services</option>
               </select>
               <ChevronDown size={18} />
             </div>
+
+            {isTranslationMatter && (
+              <>
+                <div className="select-wrapper full-width">
+                  <select
+                    value={form.translationRequirement}
+                    onChange={(e) => UpdateField("translationRequirement", e.target.value)}
+                  >
+                    <option>No translation required</option>
+                    <option>Translation required in another language</option>
+                  </select>
+                  <ChevronDown size={18} />
+                </div>
+
+                <div className="select-wrapper full-width">
+                  <select
+                    value={form.translationSupport}
+                    onChange={(e) => UpdateField("translationSupport", e.target.value)}
+                  >
+                    <option>Request practitioner</option>
+                    <option>Outsource legal translators</option>
+                  </select>
+                  <ChevronDown size={18} />
+                </div>
+              </>
+            )}
+
             <div className="select-wrapper full-width">
               <select value={form.turnaround} onChange={(e) => UpdateField("turnaround", e.target.value)}>
                 <option>Standard</option>
@@ -475,11 +657,35 @@ function QuoteForm() {
 }
 
 function Footer() {
+  const socialLinks = [
+    { label: "Instagram", href: "https://www.instagram.com", icon: Instagram },
+    { label: "Facebook", href: "https://www.facebook.com", icon: Facebook },
+    { label: "LinkedIn", href: "https://www.linkedin.com", icon: Linkedin },
+  ];
+
   return (
     <footer id="contact" className="site-footer">
       <div className="container footer-container">
-        <Logo />
-        <p className="footer-quote"><span>"</span> We don't just type, we understand the law.</p>
+        <div className="footer-brand-block">
+          <Logo />
+          <p className="footer-quote"><span>"</span> We don't just type, we understand the law.</p>
+        </div>
+
+        <div className="footer-right-block">
+          <div className="footer-socials" aria-label="Social media links">
+            {socialLinks.map(({ label, href, icon: Icon }) => (
+              <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}>
+                <Icon size={18} />
+                <span>{label}</span>
+              </a>
+            ))}
+          </div>
+
+          <div className="footer-certifications" aria-label="Certifications">
+            <p><BadgeCheck size={16} /> BEE Certification</p>
+            <p><ShieldCheck size={16} /> SSL Certification</p>
+          </div>
+        </div>
       </div>
     </footer>
   );
@@ -492,6 +698,8 @@ export default function Home() {
       <Hero />
       <Services />
       <WhyChooseUs />
+      <TranslationOptions />
+      <FounderSection />
       <Pricing />
       <QuoteForm />
       <Footer />
