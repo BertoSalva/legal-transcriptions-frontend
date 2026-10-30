@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
 /* Smooth horizontal blend for hero image */
 .hero-image-wrap {
   position: relative;
@@ -22,7 +24,6 @@
   z-index: 3;
   opacity: 0;
 }
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
 
 :root {
   --charcoal: #103741;
@@ -504,6 +505,64 @@ img { max-width: 100%; display: block; }
   border-radius: 3px;
   box-shadow: 0 8px 22px rgba(43, 43, 43, 0.04);
 }
+
+.legal-policy-section {
+  padding: 88px 0;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--ivory) 100%);
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.policy-card {
+  position: relative;
+  padding: 28px 28px 24px;
+  background: var(--white);
+  border: 1px solid rgba(16, 55, 65, 0.12);
+  border-radius: 3px;
+  box-shadow: 0 12px 26px rgba(16, 55, 65, 0.08);
+}
+
+.policy-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(15, 139, 141, 0.12);
+  color: var(--bronze);
+  border-radius: 50%;
+}
+
+.policy-card h3 {
+  margin: 18px 0 0;
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--charcoal);
+}
+
+.policy-card p {
+  margin: 14px 0 0;
+  color: rgba(31, 85, 96, 0.82);
+  line-height: 1.75;
+  font-weight: 600;
+}
+
+.policy-card a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  color: var(--bronze);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 .pricing-card.highlighted { background: var(--charcoal); color: var(--ivory); border-color: var(--charcoal); transform: translateY(-8px); box-shadow: var(--shadow); }
 .pricing-card h3 { margin: 0; font-family: var(--serif); font-size: 1.65rem; font-weight: 600; }
 .price { margin: 22px 0 0; color: var(--bronze); font-size: 2rem; font-weight: 900; }
@@ -856,6 +915,25 @@ img { max-width: 100%; display: block; }
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 .footer-socials a:hover { color: var(--bronze); border-color: var(--bronze); }
+.footer-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.footer-legal-links a {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid rgba(246, 251, 251, 0.25);
+  border-radius: 999px;
+  background: rgba(246, 251, 251, 0.05);
+  color: var(--ivory);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .footer-certifications { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .footer-certifications p {
   margin: 0;
@@ -898,6 +976,7 @@ img { max-width: 100%; display: block; }
       );
   }
   .benefits-grid { grid-template-columns: repeat(2, 1fr); }
+  .policy-grid { grid-template-columns: 1fr; }
   .translation-grid { grid-template-columns: 1fr; }
   .founder-grid { grid-template-columns: 1fr; }
   .pricing-grid, .portal-grid, .quote-grid { grid-template-columns: 1fr; }
@@ -906,7 +985,7 @@ img { max-width: 100%; display: block; }
   .quote-info .title-line { margin-left: auto; }
   .footer-container { flex-direction: column; align-items: flex-start; }
   .footer-right-block { width: 100%; justify-items: start; }
-  .footer-socials, .footer-certifications { justify-content: flex-start; }
+  .footer-socials, .footer-legal-links, .footer-certifications { justify-content: flex-start; }
 }
 
 @media (max-width: 720px) {
@@ -941,8 +1020,11 @@ img { max-width: 100%; display: block; }
   .benefits-grid, .pricing-grid, .form-grid { grid-template-columns: 1fr; }
   .benefit-card { border-left: 0; border-top: 1px solid rgba(214, 209, 196, 0.22); }
   .benefit-card:first-child { border-top: 0; }
+  .policy-card { padding: 22px 22px 20px; }
+  .policy-card h3 { font-size: 1.45rem; }
   .quote-form, .upload-card { padding: 26px; }
   .footer-container { flex-direction: column; text-align: center; }
+  .footer-legal-links { justify-content: center; }
 }
 
 /* Auth Page Styles */

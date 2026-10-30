@@ -120,6 +120,21 @@ const pricing = [
   },
 ];
 
+const policies = [
+  {
+    title: "Privacy Policy",
+    description:
+      "How we collect, use, store and protect personal information in line with the requirements of South African privacy law.",
+    href: "/privacy-policy.html",
+  },
+  {
+    title: "POPIA Compliance Policy",
+    description:
+      "Our approach to lawful processing, consent, security and access to personal information for legal matters and administrative support.",
+    href: "/popia-compliance-policy.html",
+  },
+];
+
 function Logo({ dark = true }) {
   return (
     <div className="logo-wrapper">
@@ -529,6 +544,30 @@ function Pricing() {
   );
 }
 
+function PolicySection() {
+  return (
+    <section className="legal-policy-section">
+      <div className="container">
+        <SectionTitle title="Legal & Privacy" eyebrow="Transparency" />
+        <div className="policy-grid">
+          {policies.map(({ title, description, href }) => (
+            <article key={title} className="policy-card">
+              <div className="policy-badge">
+                {title === "Privacy Policy" ? <LockKeyhole size={18} /> : <ShieldCheck size={18} />}
+              </div>
+              <h3>{title}</h3>
+              <p>{description}</p>
+              <a href={href} target="_blank" rel="noreferrer">
+                Read policy <ArrowRight size={16} />
+              </a>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function QuoteForm() {
   const [form, setForm] = useState({
     name: "",
@@ -663,6 +702,11 @@ function Footer() {
     { label: "LinkedIn", href: "https://www.linkedin.com", icon: Linkedin },
   ];
 
+  const legalLinks = [
+    { label: "Privacy Policy", href: "/privacy-policy.html" },
+    { label: "POPIA Policy", href: "/popia-compliance-policy.html" },
+  ];
+
   return (
     <footer id="contact" className="site-footer">
       <div className="container footer-container">
@@ -677,6 +721,14 @@ function Footer() {
               <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}>
                 <Icon size={18} />
                 <span>{label}</span>
+              </a>
+            ))}
+          </div>
+
+          <div className="footer-legal-links" aria-label="Legal policies">
+            {legalLinks.map(({ label, href }) => (
+              <a key={label} href={href} target="_blank" rel="noreferrer">
+                {label}
               </a>
             ))}
           </div>
@@ -701,6 +753,7 @@ export default function Home() {
       <TranslationOptions />
       <FounderSection />
       <Pricing />
+      <PolicySection />
       <QuoteForm />
       <Footer />
     </main>
